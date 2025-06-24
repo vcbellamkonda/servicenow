@@ -1,0 +1,78 @@
+Script Include:
+var CategoryConfigProvider = Class.create();
+CategoryConfigProvider.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+    getMappings: function() {
+        var data = [];
+        var gr = new GlideRecord('u_category_mapping');
+        gr.query();
+        while (gr.next()) {
+            data.push({
+                parent: gr.u_parent_category.toString(),
+                category: gr.u_category.toString(),
+                subCategory: gr.u_sub_category.toString()
+            });
+        }
+        return new JSON().encode(data);
+    }
+});
+=========================================================
+
+Client Script Parent Category
+var CategoryConfigProvider = Class.create();
+CategoryConfigProvider.prototype = Object.extendsObject(global.AbstractAjaxProcessor, {
+    getMappings: function() {
+        var data = [];
+        var gr = new GlideRecord('u_category_mapping');
+        gr.query();
+        while (gr.next()) {
+            data.push({
+                parent: gr.u_parent_category.toString(),
+                category: gr.u_category.toString(),
+                subCategory: gr.u_sub_category.toString()
+            });
+        }
+        return new JSON().encode(data);
+    }
+});
+===============================================
+(function() {
+    var ga = new GlideAjax('CategoryConfigProvider');
+    ga.addParam('sysparm_name', 'getMappings');
+    ga.getXMLAnswer(function(response) {
+        var mappings = JSON.parse(response);
+        window.categoryConfig = mappings; // Save to window/global scope
+
+        // Extract unique parent categories
+        var parents = [...new Set(mappings.map(m => m.parent))];
+
+        g_form.clearOptions('parent_category');
+        g_form.addOption('parent_category', '', '-- Select --', 0);
+
+        parents.forEach((val, idx) => {
+            g_form.addOption('parent_category', val, val, idx + 1);
+        });
+
+        // Clear dependent fields
+        g_form.clearOptions('category');
+        g_form.clearOptions('sub_category');
+    });
+})();
+=============================================================
+(function() {
+    var selectedParent = g_form.getValue('parent_category');
+    var mappings = window.categoryConfig || [];
+
+    var categories = mappings
+        .filter(m => m.parent === selectedParent)
+        .map(m => m.category);
+
+    var uniqueCategories = [...new Set(categories)];
+
+    g_form.clearOptions('category');
+    g_form.addOption('category', '', '-- Select --', 0);
+    uniqueCategories.forEach((val, idx) => {
+        g_form.addOption('category', val, val, idx + 1);
+    });
+
+    g_form.clearOptions('sub_category');
+})();
